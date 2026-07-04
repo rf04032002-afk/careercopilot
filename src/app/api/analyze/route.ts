@@ -1,9 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,31 +6,48 @@ export async function POST(req: NextRequest) {
 
     const resume = body.resume;
 
-    const prompt = `
-Kamu adalah HR Senior.
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({
+        result: `
+AI belum diaktifkan.
 
-Analisa CV berikut.
-
-Berikan:
-
-1. Score ATS (0-100)
-2. Kelebihan
-3. Kekurangan
-4. Skill yang kurang
-5. Saran Perbaikan
-6. Peluang dipanggil interview
-
-CV:
+Ringkasan CV:
 
 ${resume}
-`;
+
+Silakan tambahkan OPENAI_API_KEY nanti untuk mendapatkan analisis AI lengkap.
+`,
+      });
+    }
+
+    const OpenAI = (await import("openai")).default;
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const completion = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         {
           role: "user",
-          content: prompt,
+          content: `
+Kamu adalah HR Senior.
+
+Analisa CV berikut.
+
+Berikan:
+
+1. Score ATS
+2. Kelebihan
+3. Kekurangan
+4. Skill yang kurang
+5. Saran perbaikan
+
+CV:
+
+${resume}
+`,
         },
       ],
     });
@@ -43,10 +55,12 @@ ${resume}
     return NextResponse.json({
       result: completion.choices[0].message.content,
     });
-  } catch (err) {
+  } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
       {
-        error: "Failed",
+        error: "Internal Server Error",
       },
       {
         status: 500,
