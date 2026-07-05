@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function POST() {
   return NextResponse.json({
     success: false,
-    message: "Resume Analyzer AI belum diaktifkan.",
+    message: "AI disabled sementara. Build aman tanpa OpenAI.",
   });
 }
